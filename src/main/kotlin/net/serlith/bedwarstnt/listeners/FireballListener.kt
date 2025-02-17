@@ -87,18 +87,15 @@ class FireballListener (
         val entity = event.entity
         if (event.entityType != EntityType.FIREBALL) return
 
-        val match = this.fireballOwners[event.entity.uniqueId]?.let {
-            this.matchManager?.getMatch(it)
-        }
+        val blocks = event.blockList().toList()
+        event.blockList().clear()
 
         val section = this.mainConfig.fireballSection
-        event.blockList().toList().forEach { block ->
-            match?.let {
-                if (it.isBreakable(block)) return@let
-                event.blockList().remove(block)
-            }
-            if (block.type !in section.affectedBlocks) {
-                event.blockList().remove(block)
+        this.plugin.server.scheduler.runTaskAsynchronously(this.plugin) {
+            blocks.forEach { block ->
+                if (block.type in section.affectedBlocks) {
+                    block.type = Material.AIR
+                }
             }
         }
         this.fireballOwners.remove(event.entity.uniqueId)
