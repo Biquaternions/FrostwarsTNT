@@ -6,5 +6,4 @@ authors: [ Biquaternions ]
 website: https://serlith.net
 depend:
   - KotLib
-softdepend:
   - Frost

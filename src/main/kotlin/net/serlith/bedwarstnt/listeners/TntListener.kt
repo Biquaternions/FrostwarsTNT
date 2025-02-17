@@ -2,11 +2,11 @@ package net.serlith.bedwarstnt.listeners
 
 import club.frozed.frost.Frost
 import club.frozed.frost.managers.MatchManager
-import com.cryptomorin.xseries.messages.Titles
 import net.serlith.bedwarstnt.BedwarsTNT
 import net.serlith.bedwarstnt.configs.MainConfig
 import net.serlith.bedwarstnt.util.Reloadable
-import net.serlith.bedwarstnt.util.extraMomentum
+import net.serlith.bedwarstnt.util.scheduleBlockRemoval
+import net.serlith.bedwarstnt.util.sendCooldownTitle
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.EntityType
@@ -31,7 +31,7 @@ class TntListener (
     private val lastUsed = mutableMapOf<UUID, Long>()
 
     private var matchManager: MatchManager? = null
-    private val tntOwners = mutableMapOf<UUID, UUID>()
+    private val tntOwners: MutableMap<UUID, UUID> = mutableMapOf()
 
     init {
         val frost = this.plugin.server.pluginManager.getPlugin("Frost")
@@ -60,12 +60,7 @@ class TntListener (
             val time = current - it
             val cd = this.mainConfig.tntSection.cooldown
             if (time >= cd) return@let
-            Titles(this.plugin.messagesConfig.messagesSection.tntCooldown.replace("<seconds>", "%.1f".format((cd - time.toFloat()) / 1000)),
-                "",
-                this.plugin.mainConfig.globalSection.title.fadeIn,
-                this.plugin.mainConfig.globalSection.title.stay,
-                this.plugin.mainConfig.globalSection.title.fadeOut
-            ).send(player)
+            sendCooldownTitle(player, (cd - time.toFloat()), this.plugin.mainConfig.globalSection, this.plugin.messagesConfig.messagesSection)
             event.isCancelled = true
             return
         }
@@ -87,35 +82,17 @@ class TntListener (
 
     @EventHandler
     fun onEntityExplode(event: EntityExplodeEvent) {
-        val entity = event.entity
         if (event.entityType != EntityType.PRIMED_TNT) return
-
-        val blocks = event.blockList().toList()
-        event.blockList().clear()
-
         val section = this.mainConfig.tntSection
-        this.plugin.server.scheduler.runTaskAsynchronously(this.plugin) {
-            blocks.forEach { block ->
-                if (block.type in section.affectedBlocks) {
-                    block.type = Material.AIR
-                }
-            }
-        }
-        this.tntOwners.remove(event.entity.uniqueId)
-
-        entity.world.players.forEach players@ { player ->
-            if (player.location.distance(entity.location) > section.radius) return@players
-            player.velocity = player.velocity.add(extraMomentum(
-                player,
-                entity,
-                section.knockback.horizontalExtra,
-                section.knockback.verticalExtra,
-                section.knockback.multiplier
-            ))
-            if (player.velocity.length() > section.knockback.speedLimit) {
-                player.velocity = player.velocity.normalize().multiply(section.knockback.speedLimit)
-            }
-        }
+        scheduleBlockRemoval(
+            this.plugin,
+            this.matchManager,
+            event,
+            this.tntOwners,
+            section.affectedBlocks,
+            section.knockback,
+            section.radius,
+        )
     }
 
     @EventHandler
