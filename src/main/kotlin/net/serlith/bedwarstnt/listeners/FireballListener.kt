@@ -1,6 +1,7 @@
 package net.serlith.bedwarstnt.listeners
 
-import com.cryptomorin.xseries.messages.Titles
+import club.frozed.frost.Frost
+import club.frozed.frost.managers.MatchManager
 import net.serlith.bedwarstnt.BedwarsTNT
 import net.serlith.bedwarstnt.configs.MainConfig
 import net.serlith.bedwarstnt.util.FireballRunnable
@@ -19,6 +20,7 @@ import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerQuitEvent
 import java.util.UUID
+import kotlin.collections.set
 
 class FireballListener (
     private val plugin: BedwarsTNT,
@@ -28,7 +30,15 @@ class FireballListener (
     private lateinit var spawnLocation: Location
     private val lastUsed = mutableMapOf<UUID, Long>()
 
+    private var matchManager: MatchManager? = null
+    private val fireballOwners: MutableMap<UUID, UUID> = mutableMapOf()
+
     init {
+        val frost = this.plugin.server.pluginManager.getPlugin("Frost")
+        frost?.let {
+            this.matchManager = (it as Frost).managerHandler.matchManager
+        }
+
         this.plugin.server.pluginManager.registerEvents(this, plugin)
         this.reload()
     }
@@ -57,6 +67,8 @@ class FireballListener (
         if (player.itemInHand.amount == 1) player.itemInHand = null
         else player.itemInHand.amount -= 1
 
+        this.fireballOwners[fireball.uniqueId] = player.uniqueId
+
         FireballRunnable(
             fireball,
             event.player.location,
@@ -69,32 +81,21 @@ class FireballListener (
     fun onEntityExplode(event: EntityExplodeEvent) {
         if (event.entityType != EntityType.FIREBALL) return
         val section = this.mainConfig.fireballSection
-        this.plugin.server.scheduler.runTaskAsynchronously(this.plugin) {
-            blocks.forEach { block ->
-                if (block.type in section.affectedBlocks) {
-                    block.type = Material.AIR
-                }
-            }
-        }
-
-        entity.world.players.forEach players@ { player ->
-            if (player.location.distance(entity.location) > section.radius) return@players
-            player.velocity = player.velocity.add(extraMomentum(
-                player,
-                entity,
-                section.knockback.horizontalExtra,
-                section.knockback.verticalExtra,
-                section.knockback.multiplier
-            ))
-            if (player.velocity.length() > section.knockback.speedLimit) {
-                player.velocity = player.velocity.normalize().multiply(section.knockback.speedLimit)
-            }
-        }
+        scheduleBlockRemoval(
+            this.plugin,
+            this.matchManager,
+            event,
+            this.fireballOwners,
+            section.affectedBlocks,
+            section.knockback,
+            section.radius,
+        )
     }
 
     @EventHandler
     fun onPlayerQuit(event: PlayerQuitEvent) {
         this.lastUsed.remove(event.player.uniqueId)
+        this.fireballOwners.entries.removeIf { it.value == event.player.uniqueId }
     }
 
     override fun reload() {

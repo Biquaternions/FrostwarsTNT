@@ -1,6 +1,7 @@
 package net.serlith.bedwarstnt.listeners
 
-import com.cryptomorin.xseries.messages.Titles
+import club.frozed.frost.Frost
+import club.frozed.frost.managers.MatchManager
 import net.serlith.bedwarstnt.BedwarsTNT
 import net.serlith.bedwarstnt.configs.MainConfig
 import net.serlith.bedwarstnt.util.Reloadable
@@ -29,7 +30,15 @@ class TntListener (
     private lateinit var spawnLocation: Location
     private val lastUsed = mutableMapOf<UUID, Long>()
 
+    private var matchManager: MatchManager? = null
+    private val tntOwners: MutableMap<UUID, UUID> = mutableMapOf()
+
     init {
+        val frost = this.plugin.server.pluginManager.getPlugin("Frost")
+        frost?.let {
+            this.matchManager = (it as Frost).managerHandler.matchManager
+        }
+
         this.plugin.server.pluginManager.registerEvents(this, plugin)
         this.reload()
     }
@@ -60,6 +69,8 @@ class TntListener (
         val primedTnt = event.player.world.spawn(block.location.add(0.5, 0.5, 0.5), TNTPrimed::class.java)
         block.type = Material.AIR
         primedTnt.fuseTicks = 50
+
+        this.tntOwners[primedTnt.uniqueId] = player.uniqueId
     }
 
     @EventHandler
@@ -73,32 +84,21 @@ class TntListener (
     fun onEntityExplode(event: EntityExplodeEvent) {
         if (event.entityType != EntityType.PRIMED_TNT) return
         val section = this.mainConfig.tntSection
-        this.plugin.server.scheduler.runTaskAsynchronously(this.plugin) {
-            blocks.forEach { block ->
-                if (block.type in section.affectedBlocks) {
-                    block.type = Material.AIR
-                }
-            }
-        }
-
-        entity.world.players.forEach players@ { player ->
-            if (player.location.distance(entity.location) > section.radius) return@players
-            player.velocity = player.velocity.add(extraMomentum(
-                player,
-                entity,
-                section.knockback.horizontalExtra,
-                section.knockback.verticalExtra,
-                section.knockback.multiplier
-            ))
-            if (player.velocity.length() > section.knockback.speedLimit) {
-                player.velocity = player.velocity.normalize().multiply(section.knockback.speedLimit)
-            }
-        }
+        scheduleBlockRemoval(
+            this.plugin,
+            this.matchManager,
+            event,
+            this.tntOwners,
+            section.affectedBlocks,
+            section.knockback,
+            section.radius,
+        )
     }
 
     @EventHandler
     fun onPlayerQuit(event: PlayerQuitEvent) {
         this.lastUsed.remove(event.player.uniqueId)
+        this.tntOwners.entries.removeIf { it.value == event.player.uniqueId }
     }
 
     override fun reload() {
