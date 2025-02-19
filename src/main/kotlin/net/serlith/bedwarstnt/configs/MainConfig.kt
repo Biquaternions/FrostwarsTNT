@@ -30,7 +30,6 @@ class MainConfig (
     class GlobalConfigSection (
         val world: World,
         val spawnProtection: Long,
-        val damageMultiplier: Double,
         val title: TitleConfigSection,
     ) {
         companion object {
@@ -38,7 +37,6 @@ class MainConfig (
             fun deserialize(section: ConfigurationSection) = GlobalConfigSection(
                 Bukkit.getWorld(section.getString("world")),
                 section.getLong("spawn-protection"),
-                section.getDouble("damage-multiplier"),
                 TitleConfigSection.deserialize(section.getConfigurationSection("title")),
             )
         }
@@ -49,6 +47,7 @@ class MainConfig (
     class TntConfigSection(
         val radius: Double,
         val cooldown: Long,
+        val damageMultiplier: Double,
         val affectedBlocks: List<Material>,
         val knockback: KnockbackConfigSection
     ) {
@@ -57,6 +56,7 @@ class MainConfig (
             fun deserialize(section: ConfigurationSection) = TntConfigSection(
                 section.getDouble("radius"),
                 section.getLong("cooldown"),
+                section.getDouble("damage-multiplier"),
                 section.getStringList("affected-blocks")!!.map { Material.getMaterial(it) },
                 KnockbackConfigSection.deserialize(section.getConfigurationSection("knockback"))
             )
@@ -72,6 +72,7 @@ class MainConfig (
         val speed: Double,
         val despawnDistance: Long,
         val cooldown: Long,
+        val damageMultiplier: Double,
         val affectedBlocks: List<Material>,
         val knockback: KnockbackConfigSection
     ) {
@@ -83,6 +84,29 @@ class MainConfig (
                 section.getDouble("speed"),
                 section.getLong("despawn-distance"),
                 section.getLong("cooldown"),
+                section.getDouble("damage-multiplier"),
+                section.getStringList("affected-blocks")!!.map { Material.getMaterial(it) },
+                KnockbackConfigSection.deserialize(section.getConfigurationSection("knockback"))
+            )
+        }
+    }
+
+    lateinit var bedSection: BedConfigurationSection
+        private set
+
+    class BedConfigurationSection(
+        val radius: Double,
+        val cooldown: Long,
+        val damageMultiplier: Double,
+        val affectedBlocks: List<Material>,
+        val knockback: KnockbackConfigSection,
+    ) {
+        companion object {
+            @JvmStatic
+            fun deserialize(section: ConfigurationSection) = BedConfigurationSection(
+                section.getDouble("radius"),
+                section.getLong("cooldown"),
+                section.getDouble("damage-multiplier"),
                 section.getStringList("affected-blocks")!!.map { Material.getMaterial(it) },
                 KnockbackConfigSection.deserialize(section.getConfigurationSection("knockback"))
             )
@@ -100,6 +124,7 @@ class MainConfig (
             this.globalSection = GlobalConfigSection.deserialize(this.config.getConfigurationSection("global"))
             this.tntSection = TntConfigSection.deserialize(this.config.getConfigurationSection("tnt"))
             this.fireballSection = FireballConfigSection.deserialize(this.config.getConfigurationSection("fireball"))
+            this.bedSection = BedConfigurationSection.deserialize(this.config.getConfigurationSection("bed"))
         } catch (_: Exception) {
             throw ReloadException(this.fileName)
         }

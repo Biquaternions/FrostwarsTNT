@@ -3,6 +3,7 @@ package net.serlith.bedwarstnt
 import net.serlith.bedwarstnt.commands.MainCommand
 import net.serlith.bedwarstnt.configs.MainConfig
 import net.serlith.bedwarstnt.configs.MessagesConfig
+import net.serlith.bedwarstnt.listeners.BedListener
 import net.serlith.bedwarstnt.listeners.FireballListener
 import net.serlith.bedwarstnt.listeners.TntListener
 import org.bukkit.plugin.java.JavaPlugin
@@ -22,6 +23,7 @@ class BedwarsTNT : JavaPlugin() {
 
         TntListener(this, this.mainConfig)
         FireballListener(this, this.mainConfig)
+        BedListener(this, this.mainConfig)
 
         MainCommand(this)
 

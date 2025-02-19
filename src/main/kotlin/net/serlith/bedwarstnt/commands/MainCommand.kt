@@ -67,6 +67,10 @@ class MainCommand (
                                 .replace("<fireball-v-extra>", "%.2f".format(this.plugin.mainConfig.fireballSection.knockback.verticalExtra))
                                 .replace("<fireball-multiplier>", "%.2f".format(this.plugin.mainConfig.fireballSection.knockback.multiplier))
                                 .replace("<fireball-speed-limit>", "%.2f".format(this.plugin.mainConfig.fireballSection.knockback.speedLimit))
+                                .replace("<bed-h-extra>", "%.2f".format(this.plugin.mainConfig.bedSection.knockback.horizontalExtra))
+                                .replace("<bed-v-extra>", "%.2f".format(this.plugin.mainConfig.bedSection.knockback.verticalExtra))
+                                .replace("<bed-multiplier>", "%.2f".format(this.plugin.mainConfig.bedSection.knockback.multiplier))
+                                .replace("<bed-speed-limit>", "%.2f".format(this.plugin.mainConfig.bedSection.knockback.speedLimit))
                             )
                         }
                         return true
@@ -74,15 +78,19 @@ class MainCommand (
                     "other" -> {
                         this.plugin.messagesConfig.messagesSection.otherDetails.forEach {
                             sender.sendMessage(it
-                                .replace("<damage-multiplier>", "%.2f".format(this.plugin.mainConfig.globalSection.damageMultiplier))
                                 .replace("<spawn-protection>", this.plugin.mainConfig.globalSection.spawnProtection.toString())
                                 .replace("<tnt-radius>", "%.2f".format(this.plugin.mainConfig.tntSection.radius))
                                 .replace("<tnt-cooldown>", "${this.plugin.mainConfig.tntSection.cooldown}ms")
+                                .replace("<tnt-multiplier>", "%.2f".format(this.plugin.mainConfig.tntSection.damageMultiplier))
                                 .replace("<fireball-radius>", "%.2f".format(this.plugin.mainConfig.fireballSection.radius))
                                 .replace("<fireball-yield>", "%.2f".format(this.plugin.mainConfig.fireballSection.yield))
                                 .replace("<fireball-speed>", "%.2f".format(this.plugin.mainConfig.fireballSection.speed))
                                 .replace("<fireball-despawn>", this.plugin.mainConfig.fireballSection.despawnDistance.toString())
                                 .replace("<fireball-cooldown>", "${this.plugin.mainConfig.fireballSection.cooldown}ms")
+                                .replace("<fireball-multiplier>", "%.2f".format(this.plugin.mainConfig.fireballSection.damageMultiplier))
+                                .replace("<bed-radius>", "%.2f".format(this.plugin.mainConfig.bedSection.radius))
+                                .replace("<bed-cooldown>", "${this.plugin.mainConfig.bedSection.cooldown}ms")
+                                .replace("<bed-multiplier>", "%.2f".format(this.plugin.mainConfig.bedSection.damageMultiplier))
                             )
                         }
                         return true

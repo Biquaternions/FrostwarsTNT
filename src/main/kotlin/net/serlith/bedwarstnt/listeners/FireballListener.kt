@@ -12,10 +12,13 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.EntityType
 import org.bukkit.entity.Fireball
+import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
+import org.bukkit.event.entity.EntityDamageByEntityEvent
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause
 import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerQuitEvent
@@ -30,12 +33,11 @@ class FireballListener (
     private lateinit var spawnLocation: Location
     private val lastUsed = mutableMapOf<UUID, Long>()
 
-    private var matchManager: MatchManager? = null
+    private val matchManager: MatchManager
     private val fireballOwners: MutableMap<UUID, UUID> = mutableMapOf()
 
     init {
-        val frost = this.plugin.server.pluginManager.getPlugin("Frost")
-        frost?.let {
+        this.plugin.server.pluginManager.getPlugin("Frost")!!.let {
             this.matchManager = (it as Frost).managerHandler.matchManager
         }
 
@@ -75,6 +77,14 @@ class FireballListener (
             this.mainConfig.fireballSection.speed,
             this.mainConfig.fireballSection.despawnDistance
         ).runTaskTimerAsynchronously(plugin, 0L, 5L)
+    }
+
+    @EventHandler
+    fun onEntityDamageByEntityEvent(event: EntityDamageByEntityEvent) {
+        if (event.cause != DamageCause.ENTITY_EXPLOSION) return
+        if (event.entity !is Player) return
+        if (event.damager !is Fireball) return
+        event.damage *= this.plugin.mainConfig.fireballSection.damageMultiplier
     }
 
     @EventHandler

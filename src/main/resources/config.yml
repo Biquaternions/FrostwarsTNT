@@ -57,3 +57,22 @@ fireball:
     multiplier: 0.5
     # Speed limit by the explosion
     speed-limit: 1.5
+
+bed:
+  # Players within this radius will be affected
+  radius: 10.0
+  # Cooldown in milliseconds
+  cooldown: 0
+  # Blocks that will break by the explosion
+  affected-blocks:
+    - COBBLESTONE
+    - WOOD
+  knockback:
+    # Horizontal extra
+    horizontal-extra: 0.2
+    # Vertical extra
+    vertical-extra: 0.1
+    # Overall multiplier
+    multiplier: 1.0
+    # Speed limit by the explosion
+    speed-limit: 1.0
